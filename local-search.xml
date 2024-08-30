@@ -8,9 +8,15 @@
     <link href="/2024/08/30/hehe/"/>
     <url>/2024/08/30/hehe/</url>
     
-    <content type="html"><![CDATA[]]></content>
+    <content type="html"><![CDATA[<div class="note note-success">            <p>文字 或者 <code>markdown</code> 均可</p>          </div><p>在 markdown 中加入如下的代码来使用 Label：</p>            <input type="checkbox"  checked="checked">text          <ul><li>text：显示的文字</li><li>checked：默认是否已勾选，默认 false</li><li>incline: 是否内联（可以理解为后面的文字是否换行），默认 false</li></ul><a class="btn" href="url"  title="title" target="_blank">text</a><p><a class="btn" href="url" title="title">text</a></p>]]></content>
     
     
+    
+    <tags>
+      
+      <tag>test</tag>
+      
+    </tags>
     
   </entry>
   
