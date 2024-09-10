@@ -1,0 +1,959 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/null">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="了解编译器1. 预处理阶段   运行以下命令生成预处理后的文件： 1gcc -E mul.c -o mul.i   输出文件：mul.i 说明：此文件包含了宏展开和头文件包含后的源代码。可以打开这个文件，观察 #include &lt;iostream&gt;是如何被展开的。  2. 编译阶段（生成汇编代码）   运行以下命令生成汇编代码： 1gcc -S mul.i -o mul.s   输出文">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LLVM">
+<meta property="og:url" content="http://example.com/2024/09/10/LLVM/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="了解编译器1. 预处理阶段   运行以下命令生成预处理后的文件： 1gcc -E mul.c -o mul.i   输出文件：mul.i 说明：此文件包含了宏展开和头文件包含后的源代码。可以打开这个文件，观察 #include &lt;iostream&gt;是如何被展开的。  2. 编译阶段（生成汇编代码）   运行以下命令生成汇编代码： 1gcc -S mul.i -o mul.s   输出文">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2024-09-10T03:24:32.000Z">
+<meta property="article:modified_time" content="2024-09-10T03:26:33.260Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="2024fall">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+    <meta name="referrer" content="no-referrer-when-downgrade">
+  
+  
+  <title>LLVM - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+  
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_3846514_kabxni94auf.css">
+<link rel="stylesheet" href="//cdn.jsdelivr.net/gh/bynotes/texiao/source/css/shubiao.css">
+<link rel="stylesheet" href="//cdn.jsdelivr.net/gh/bynotes/texiao/source/css/gundongtiao.css">
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":true,"follow_dnt":true,"baidu":null,"google":null,"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null},"woyaola":null,"cnzz":null},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  
+<meta name="generator" content="Hexo 7.2.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>終末裁判的博客</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives" target="_self">
+                <i class="iconfont icon-books"></i>
+                <span>archieves</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories" target="_self">
+                <i class="iconfont icon-th-large"></i>
+                <span>catgories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/links/" target="_self">
+                <i class="iconfont icon-link-fill"></i>
+                <span>Links</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" target="_self" href="javascript:;" role="button"
+                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="iconfont icon-book"></i>
+                <span>docs</span>
+              </a>
+              <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                
+                  
+                  
+                  
+                  <a class="dropdown-item" href="https://hexo.fluid-dev.com/" target="_self">
+                    
+                    <span>主题博客</span>
+                  </a>
+                
+                  
+                  
+                  
+                  <a class="dropdown-item" href="https://hexo.fluid-dev.com/docs/guide/" target="_self">
+                    
+                    <span>配置指南</span>
+                  </a>
+                
+                  
+                  
+                  
+                  <a class="dropdown-item" href="https://hexo.fluid-dev.com/docs/icon/" target="_self">
+                    
+                    <span>图标用法</span>
+                  </a>
+                
+              </div>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="LLVM"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-author" aria-hidden="true"></i>
+        John Doe
+      </span>
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2024-09-10 11:24" pubdate>
+           2024 年 09 月 10 日 , am 11:24 , Tuesday
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          <!-- compatible with older versions-->
+          2.4k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          <!-- compatible with older versions-->
+          21 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">LLVM</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="了解编译器"><a href="#了解编译器" class="headerlink" title="了解编译器"></a>了解编译器</h2><h3 id="1-预处理阶段"><a href="#1-预处理阶段" class="headerlink" title="1. 预处理阶段"></a>1. <strong>预处理阶段</strong></h3><p>   运行以下命令生成预处理后的文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">gcc -E mul.c -o mul.i<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>输出文件</strong>：<code>mul.i</code></li>
+<li><strong>说明</strong>：此文件包含了宏展开和头文件包含后的源代码。可以打开这个文件，观察 <code>#include &lt;iostream&gt;</code>是如何被展开的。</li>
+</ul>
+<h3 id="2-编译阶段（生成汇编代码）"><a href="#2-编译阶段（生成汇编代码）" class="headerlink" title="2. 编译阶段（生成汇编代码）"></a>2. <strong>编译阶段（生成汇编代码）</strong></h3><p>   运行以下命令生成汇编代码：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">gcc -S mul.i -o mul.s<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>输出文件</strong>：<code>mul.s</code></li>
+<li><strong>说明</strong>：这个文件是由源代码生成的汇编代码，可以打开此文件，查看C++代码如何被翻译成汇编指令。</li>
+</ul>
+<h3 id="3-汇编阶段（生成目标文件）"><a href="#3-汇编阶段（生成目标文件）" class="headerlink" title="3. 汇编阶段（生成目标文件）"></a>3. <strong>汇编阶段（生成目标文件）</strong></h3><p>   运行以下命令将汇编代码转换为目标文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">gcc -c mul.s -o mul.o<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>输出文件</strong>：<code>mul.o</code></li>
+<li><strong>说明</strong>：此文件是机器码，无法直接阅读。它会在链接时使用。</li>
+</ul>
+<h3 id="4-链接阶段（生成可执行文件）"><a href="#4-链接阶段（生成可执行文件）" class="headerlink" title="4. 链接阶段（生成可执行文件）"></a>4. <strong>链接阶段（生成可执行文件）</strong></h3><p>   最后，运行以下命令生成最终的可执行文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">gcc mul.o -o mul<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>输出文件</strong>：<code>mul</code>（在Windows上可能是 <code>mul.exe</code>）</li>
+<li><strong>说明</strong>：此可执行文件包含了所有库和外部引用，现在可以运行这个程序。</li>
+</ul>
+<h3 id="5-运行程序"><a href="#5-运行程序" class="headerlink" title="5. 运行程序"></a>5. <strong>运行程序</strong></h3><p>   使用以下命令运行程序并输入一个数来测试结果：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">./mul<br></code></pre></td></tr></table></figure>
+
+<p>   输入一个整数，程序将输出对应的阶乘。</p>
+<h3 id="6-使用LLVM工具链"><a href="#6-使用LLVM工具链" class="headerlink" title="6. 使用LLVM工具链"></a>6. <strong>使用LLVM工具链</strong></h3><p>   如果你使用的是LLVM&#x2F;Clang工具链，步骤类似：</p>
+<ul>
+<li><p><strong>预处理</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">clang -E mul.c -o mul.i<br></code></pre></td></tr></table></figure></li>
+<li><p><strong>编译（生成LLVM IR）</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">clang -emit-llvm -S mul.c -o mul.ll<br></code></pre></td></tr></table></figure>
+
+<p>这将生成LLVM的中间表示。</p>
+</li>
+<li><p><strong>编译（生成汇编代码）</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">clang -S mul.ll -o mul.s<br></code></pre></td></tr></table></figure></li>
+<li><p><strong>汇编</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">clang -c mul.s -o mul.o<br></code></pre></td></tr></table></figure></li>
+<li><p><strong>链接并生成可执行文件</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">clang mul.o -o mul<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li>通过这几个步骤，可以看到每个阶段生成的文件，并观察编译器如何处理源代码。</li>
+</ul>
+<h2 id="不同阶段生成的文件"><a href="#不同阶段生成的文件" class="headerlink" title="不同阶段生成的文件"></a>不同阶段生成的文件</h2><p>问题描述了从汇编生成目标文件、链接生成可执行文件的过程。具体而言，目标文件不能直接执行，必须与其他目标文件或库链接，生成最终的可执行文件。链接器的作用是将这些机器代码结合起来，处理外部引用，分配地址空间，最终生成可执行的二进制文件。</p>
+<p>你可以通过以下步骤探索这个流程，并查看不同阶段生成的文件之间的差异：</p>
+<h3 id="1-编译源文件生成目标文件"><a href="#1-编译源文件生成目标文件" class="headerlink" title="1. 编译源文件生成目标文件"></a>1. 编译源文件生成目标文件</h3><p>使用 <code>gcc</code> 编译源文件生成目标文件（<code>.o</code> 文件）。目标文件是可重定位的机器代码，不能独立运行。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">gcc -c main.c -o main.o<br></code></pre></td></tr></table></figure>
+
+<h3 id="2-链接目标文件生成可执行文件"><a href="#2-链接目标文件生成可执行文件" class="headerlink" title="2. 链接目标文件生成可执行文件"></a>2. 链接目标文件生成可执行文件</h3><p>使用链接器将目标文件链接为可执行文件。你可以选择静态链接或动态链接：</p>
+<ul>
+<li><p><strong>静态链接</strong>：<br>静态链接意味着所有库的代码都会被复制到最终的可执行文件中，生成的可执行文件体积较大，但可以独立运行。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">gcc -static main.o -o main<br></code></pre></td></tr></table></figure></li>
+<li><p><strong>动态链接</strong>：<br>动态链接则是将库的引用保留在最终的可执行文件中，运行时需要操作系统提供相应的动态链接库。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">gcc main.o -o main<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="3-反汇编可执行文件"><a href="#3-反汇编可执行文件" class="headerlink" title="3. 反汇编可执行文件"></a>3. 反汇编可执行文件</h3><p>可以使用 <code>objdump</code> 或其他反汇编工具来查看生成的目标文件或可执行文件的汇编代码，比较不同阶段的差异。</p>
+<ul>
+<li><p><strong>反汇编目标文件</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">objdump -d main.o<br></code></pre></td></tr></table></figure></li>
+<li><p><strong>反汇编可执行文件</strong>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">objdump -d main<br></code></pre></td></tr></table></figure></li>
+</ul>
+<p>在链接后，你可以观察到以下几点差异：</p>
+<ul>
+<li>可执行文件中的地址通常是绝对的，而目标文件中的地址是相对的（因为链接器会负责地址分配）。</li>
+<li>外部函数调用在可执行文件中已经被解析为真实的地址，而在目标文件中仍是未解析的符号。</li>
+</ul>
+<h3 id="4-加载和执行"><a href="#4-加载和执行" class="headerlink" title="4. 加载和执行"></a>4. 加载和执行</h3><p>执行可执行文件时，操作系统的加载器会将可执行文件的内容载入内存，设置必要的内存布局，初始化堆栈和堆，并将程序的控制权交给入口点。这部分过程是由操作系统和硬件管理的，超出了编译和链接的范围。</p>
+<hr>
+<p><strong>总结</strong>：</p>
+<ul>
+<li>编译生成的目标文件不能直接执行，必须通过链接器与其他文件和库结合，生成最终的可执行文件。</li>
+<li>反汇编目标文件和可执行文件可以看到链接后的地址分配和符号解析的不同。</li>
+<li>你可以通过调整链接选项（如 <code>-static</code>）来改变可执行文件的生成方式，从而影响反汇编后的结构。</li>
+</ul>
+<p><code>llvm-dis</code> 是 LLVM 的反汇编工具，主要用于将 LLVM 的二进制位码（bitcode）文件 <code>.bc</code> 转换为人类可读的 LLVM IR（<code>.ll</code> 文件）。出现 <code>file doesn&#39;t start with bitcode header</code> 错误的原因是你尝试将 <code>.ll</code> 文件（文本格式）转换为 <code>.bc</code> 文件（位码格式），但它并非位码文件，因此 <code>llvm-dis</code> 无法解析。</p>
+<p>正确的步骤应该是：</p>
+<ol>
+<li><p><strong>生成 <code>.ll</code> 文件</strong>：通过使用 <code>clang</code> 或 <code>gcc</code> 编译你的 C 文件为 LLVM IR 代码。例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">clang -S -emit-llvm mul.c -o mul.ll<br></code></pre></td></tr></table></figure></li>
+<li><p><strong>将 <code>.ll</code> 文件编译为 <code>.bc</code> 文件</strong>：如果你有一个 <code>.ll</code> 文件，并且想将其转换为位码 <code>.bc</code> 文件，你应该使用 <code>llvm-as</code> 命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">llvm-as mul.ll -o mul.bc<br></code></pre></td></tr></table></figure></li>
+<li><p><strong>将 <code>.bc</code> 文件反汇编为 <code>.ll</code> 文件</strong>：在拥有 <code>.bc</code> 位码文件之后，可以使用 <code>llvm-dis</code> 将其反汇编回 <code>.ll</code> 文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">llvm-dis mul.bc -o mul.ll<br></code></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="解决方案步骤："><a href="#解决方案步骤：" class="headerlink" title="解决方案步骤："></a>解决方案步骤：</h3><ol>
+<li><p><strong>首先确保生成 <code>.ll</code> 文件</strong>：</p>
+<ul>
+<li>使用 <code>clang</code> 生成 LLVM IR 代码：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">clang -S -emit-llvm mul.c -o mul.ll<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p><strong>然后生成 <code>.bc</code> 文件</strong>：</p>
+<ul>
+<li>使用 <code>llvm-as</code> 将 <code>.ll</code> 文件转换为 <code>.bc</code> 文件：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">llvm-as mul.ll -o mul.bc<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p><strong>验证生成的 <code>.bc</code> 文件</strong>：</p>
+<ul>
+<li>通过 <code>llvm-dis</code> 命令可以反汇编 <code>.bc</code> 文件，验证内容是否正确：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">llvm-dis mul.bc -o mul.ll<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ol>
+<p>通过这些步骤，你应该能够正确地生成并处理 <code>.bc</code> 和 <code>.ll</code> 文件。</p>
+<h2 id="makefile"><a href="#makefile" class="headerlink" title="makefile"></a>makefile</h2><p>要执行 <code>Makefile</code> 文件，首先确保以下几点：</p>
+<ol>
+<li>确保已经创建了一个名为 <code>Makefile</code> 或者 <code>makefile</code> 的文件，并将你写好的内容保存进去。</li>
+<li>确保 <code>main.c</code> 文件存在，并且路径正确。</li>
+</ol>
+<p>执行步骤如下：</p>
+<ol>
+<li><p><strong>进入包含 <code>Makefile</code> 和 <code>main.c</code> 的目录</strong>：</p>
+<p>打开终端，并使用 <code>cd</code> 命令进入包含 <code>Makefile</code> 和 <code>main.c</code> 的目录，例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-built_in">cd</span> /mnt/d/2024fall/编译/lab/lab1/CompilingProject/lab1/your_project<br></code></pre></td></tr></table></figure></li>
+<li><p><strong>执行 <code>make</code> 命令</strong>：</p>
+<p>执行 <code>make</code> 命令时，可以指定你想执行的目标。比如，如果你想执行 <code>pre</code> 目标，运行以下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">make pre<br></code></pre></td></tr></table></figure>
+
+<p>如果想执行词法分析 <code>lexer</code> 目标，运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">make lexer<br></code></pre></td></tr></table></figure></li>
+<li><p><strong>执行全部默认目标</strong>：</p>
+<p>如果没有指定任何目标，<code>make</code> 会执行 <code>Makefile</code> 中的第一个目标。你可以通过以下命令执行默认的目标：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">make<br></code></pre></td></tr></table></figure></li>
+<li><p><strong>清理生成的文件</strong>：</p>
+<p>要清除生成的文件，运行 <code>clean</code> 目标：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">make clean<br></code></pre></td></tr></table></figure>
+
+<p>如果你想清除所有生成的文件，运行 <code>clean-all</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">make clean-all<br></code></pre></td></tr></table></figure></li>
+</ol>
+<p>通过这些步骤，可以按需要执行不同的编译和分析阶段。</p>
+<h2 id="要实现一个SysY编译器并通过LLVM-IR生成目标程序"><a href="#要实现一个SysY编译器并通过LLVM-IR生成目标程序" class="headerlink" title="要实现一个SysY编译器并通过LLVM IR生成目标程序"></a>要实现一个SysY编译器并通过LLVM IR生成目标程序</h2><h3 id="1-编写SysY源程序"><a href="#1-编写SysY源程序" class="headerlink" title="1. 编写SysY源程序"></a>1. 编写SysY源程序</h3><p>假设你选择的是一个简单的阶乘程序，SysY 是 C 的子集，所以可以用以下形式编写这个程序：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">int</span> <span class="hljs-title function_">fact</span><span class="hljs-params">(<span class="hljs-type">int</span> n)</span> &#123;<br>  <span class="hljs-keyword">if</span> (n == <span class="hljs-number">0</span>) &#123;<br>    <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>;<br>  &#125; <span class="hljs-keyword">else</span> &#123;<br>    <span class="hljs-keyword">return</span> n * fact(n - <span class="hljs-number">1</span>);<br>  &#125;<br>&#125;<br><br><span class="hljs-type">int</span> <span class="hljs-title function_">main</span><span class="hljs-params">()</span> &#123;<br>  <span class="hljs-keyword">return</span> fact(<span class="hljs-number">5</span>);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这个程序是递归求阶乘的函数，SysY 语法和 C 语法几乎一样，所以我们可以将其转化为 LLVM IR 进行编译。</p>
+<h3 id="2-使用LLVM-Clang生成LLVM-IR"><a href="#2-使用LLVM-Clang生成LLVM-IR" class="headerlink" title="2. 使用LLVM&#x2F;Clang生成LLVM IR"></a>2. 使用LLVM&#x2F;Clang生成LLVM IR</h3><h4 id="编写LLVM-IR代码："><a href="#编写LLVM-IR代码：" class="headerlink" title="编写LLVM IR代码："></a>编写LLVM IR代码：</h4><p>根据你提供的SysY程序，我们可以手动编写一个等效的LLVM IR代码，当然这只是一个手工写例子，实际编译器会通过前端生成：</p>
+<figure class="highlight llvm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs llvm"><span class="hljs-comment">; 函数声明</span><br><span class="hljs-keyword">define</span> <span class="hljs-type">i32</span> <span class="hljs-title">@fact</span>(<span class="hljs-type">i32</span> <span class="hljs-variable">%n</span>) &#123;<br><span class="hljs-symbol">entry:</span><br>    <span class="hljs-comment">; 判断 n 是否为 0</span><br>    <span class="hljs-variable">%cmp</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">icmp</span> <span class="hljs-keyword">eq</span> <span class="hljs-type">i32</span> <span class="hljs-variable">%n</span><span class="hljs-punctuation">,</span> <span class="hljs-number">0</span><br>    <span class="hljs-keyword">br</span> <span class="hljs-type">i1</span> <span class="hljs-variable">%cmp</span><span class="hljs-punctuation">,</span> label <span class="hljs-variable">%if.then</span><span class="hljs-punctuation">,</span> label <span class="hljs-variable">%if.else</span><br><br>if.then:                                       <br>    <span class="hljs-keyword">ret</span> <span class="hljs-type">i32</span> <span class="hljs-number">1</span><br><br>if.else:                                       <br>    <span class="hljs-comment">; 递归调用 fact(n - 1)</span><br>    <span class="hljs-variable">%n_sub_1</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">sub</span> <span class="hljs-type">i32</span> <span class="hljs-variable">%n</span><span class="hljs-punctuation">,</span> <span class="hljs-number">1</span><br>    <span class="hljs-variable">%call</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">call</span> <span class="hljs-type">i32</span> <span class="hljs-title">@fact</span>(<span class="hljs-type">i32</span> <span class="hljs-variable">%n_sub_1</span>)<br>    <span class="hljs-comment">; 返回 n * fact(n - 1)</span><br>    <span class="hljs-variable">%mul</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">mul</span> <span class="hljs-type">i32</span> <span class="hljs-variable">%n</span><span class="hljs-punctuation">,</span> <span class="hljs-variable">%call</span><br>    <span class="hljs-keyword">ret</span> <span class="hljs-type">i32</span> <span class="hljs-variable">%mul</span><br>&#125;<br><br><span class="hljs-comment">; 主函数</span><br><span class="hljs-keyword">define</span> <span class="hljs-type">i32</span> <span class="hljs-title">@main</span>() &#123;<br><span class="hljs-symbol">entry:</span><br>    <span class="hljs-comment">; 调用 fact(5)</span><br>    <span class="hljs-variable">%call</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">call</span> <span class="hljs-type">i32</span> <span class="hljs-title">@fact</span>(<span class="hljs-type">i32</span> <span class="hljs-number">5</span>)<br>    <span class="hljs-keyword">ret</span> <span class="hljs-type">i32</span> <span class="hljs-variable">%call</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h4 id="生成LLVM-IR文件："><a href="#生成LLVM-IR文件：" class="headerlink" title="生成LLVM IR文件："></a>生成LLVM IR文件：</h4><p>你可以通过命令行工具 <code>clang</code> 来生成 LLVM IR。例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">clang -S -emit-llvm fact.c -o fact.ll<br></code></pre></td></tr></table></figure>
+
+<p>这个命令会将你的SysY程序编译成LLVM IR，输出到 <code>fact.ll</code> 文件中。</p>
+<h3 id="3-编译LLVM-IR生成目标代码"><a href="#3-编译LLVM-IR生成目标代码" class="headerlink" title="3. 编译LLVM IR生成目标代码"></a>3. 编译LLVM IR生成目标代码</h3><p>现在你已经有了LLVM IR文件，可以将其编译成目标程序。你可以使用 <code>llc</code> 命令将LLVM IR转化为汇编代码，接着使用 <code>gcc</code> 链接生成可执行文件。</p>
+<h4 id="使用-llc生成汇编代码："><a href="#使用-llc生成汇编代码：" class="headerlink" title="使用 llc生成汇编代码："></a>使用 <code>llc</code>生成汇编代码：</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">llc fact.ll -o fact.s<br></code></pre></td></tr></table></figure>
+
+<p>这会生成对应的汇编代码 <code>fact.s</code>。</p>
+<h4 id="使用-gcc-生成可执行文件："><a href="#使用-gcc-生成可执行文件：" class="headerlink" title="使用 gcc 生成可执行文件："></a>使用 <code>gcc</code> 生成可执行文件：</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">gcc fact.s -o fact<br></code></pre></td></tr></table></figure>
+
+<p>这样，你的LLVM IR就被编译成了可执行的目标程序。</p>
+<h3 id="4-验证结果"><a href="#4-验证结果" class="headerlink" title="4. 验证结果"></a>4. 验证结果</h3><p>现在，你可以运行生成的可执行文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">./fact<br></code></pre></td></tr></table></figure>
+
+<p>这个程序会返回 <code>120</code>，因为 <code>5! = 120</code>。</p>
+<h3 id="5-查看各阶段的输出"><a href="#5-查看各阶段的输出" class="headerlink" title="5. 查看各阶段的输出"></a>5. 查看各阶段的输出</h3><p>在生成LLVM IR文件和汇编代码的过程中，你可以通过命令行选项获得各个阶段的输出，并分析它们和源代码的关系。</p>
+<p>例如：</p>
+<h4 id="查看LLVM-IR："><a href="#查看LLVM-IR：" class="headerlink" title="查看LLVM IR："></a>查看LLVM IR：</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash">clang -S -emit-llvm fact.c -o fact.ll<br><span class="hljs-built_in">cat</span> fact.ll<br></code></pre></td></tr></table></figure>
+
+<h4 id="查看汇编代码："><a href="#查看汇编代码：" class="headerlink" title="查看汇编代码："></a>查看汇编代码：</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs bash">llc fact.ll -o fact.s<br><span class="hljs-built_in">cat</span> fact.s<br></code></pre></td></tr></table></figure>
+
+<h4 id="反汇编："><a href="#反汇编：" class="headerlink" title="反汇编："></a>反汇编：</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">objdump -d fact<br></code></pre></td></tr></table></figure>
+
+<h4 id="查看符号表："><a href="#查看符号表：" class="headerlink" title="查看符号表："></a>查看符号表：</h4><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">nm fact<br></code></pre></td></tr></table></figure>
+
+<p>通过这些命令，你可以获得不同阶段的输出，并分析它们如何从源程序演变到目标程序的过程。</p>
+<h3 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h3><p>你可以通过 <code>clang</code> 将SysY程序编译成LLVM IR，利用LLVM工具链生成汇编代码和可执行文件。通过研究LLVM IR和各个编译阶段的输出，你可以更好地理解SysY编译器的实现。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/complie/" class="category-chain-item">complie</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/2024fall/" class="print-no-link">#2024fall</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>LLVM</div>
+      <div>http://example.com/2024/09/10/LLVM/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>September 10, 2024</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2024/08/30/hello-world/" title="hello">
+                        <span class="hidden-mobile">hello</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="valine"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#valine', function() {
+      Fluid.utils.createScript('https://lib.baomitu.com/valine/1.5.1/Valine.min.js', function() {
+        var options = Object.assign(
+          {"appId":"你的appId","appKey":"你的appKey","path":"window.location.pathname","placeholder":"留言仅限讨论，禁止广告等行为","avatar":"retro","meta":["nick","mail","link"],"requiredFields":[],"pageSize":10,"lang":"zh-CN","highlight":false,"recordIP":false,"serverURLs":"你的serverURLs","emojiCDN":null,"emojiMaps":null,"enableQQ":false},
+          {
+            el: "#valine",
+            path: window.location.pathname
+          }
+        )
+        new Valine(options);
+        Fluid.utils.waitElementVisible('#valine .vcontent', () => {
+          var imgSelector = '#valine .vcontent img:not(.vemoji)';
+          Fluid.plugins.imageCaption(imgSelector);
+          Fluid.plugins.fancyBox(imgSelector);
+        })
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+    <div class="statistics">
+  
+  
+
+  
+    
+      <span id="busuanzi_container_site_pv" style="display: none">
+        总访问量 
+        <span id="busuanzi_value_site_pv"></span>
+         次
+      </span>
+    
+    
+      <span id="busuanzi_container_site_uv" style="display: none">
+        总访客数 
+        <span id="busuanzi_value_site_uv"></span>
+         人
+      </span>
+    
+    
+
+  
+
+</div>
+
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+  
+<script src="//cdn.jsdelivr.net/gh/bynotes/texiao/source/js/love.js"></script>
+<script src="//cdn.jsdelivr.net/gh/bynotes/texiao/source/js/xiaoxingxing.js"></script>
+<script src="//cdn.jsdelivr.net/gh/bynotes/texiao/source/js/xiaoxuehua.js"></script>
+<script src="//cdn.jsdelivr.net/gh/bynotes/texiao/source/js/caidai.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>
