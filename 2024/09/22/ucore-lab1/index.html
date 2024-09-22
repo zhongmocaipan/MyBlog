@@ -1,0 +1,881 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/%5Bobject%20Object%5D">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="练习1：理解内核启动中的程序入口操作la sp, bootstacktop这条指令将栈指针 sp 初始化为内核栈顶 bootstacktop。其目的是为内核的初始化阶段设置一个安全的栈空间，以便后续执行函数调用时有足够的栈空间。 tail kern_inittail kern_init 的作用是跳转到 kern_init 函数执行，同时它是一个尾调用优化形式，意味着它在执行过程中不会保留当前函数的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ucore_lab1">
+<meta property="og:url" content="http://example.com/2024/09/22/ucore-lab1/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="练习1：理解内核启动中的程序入口操作la sp, bootstacktop这条指令将栈指针 sp 初始化为内核栈顶 bootstacktop。其目的是为内核的初始化阶段设置一个安全的栈空间，以便后续执行函数调用时有足够的栈空间。 tail kern_inittail kern_init 的作用是跳转到 kern_init 函数执行，同时它是一个尾调用优化形式，意味着它在执行过程中不会保留当前函数的">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/image/report/1726979027919.png">
+<meta property="og:image" content="http://example.com/image/report/1726980250503.png">
+<meta property="article:published_time" content="2024-09-22T05:27:35.000Z">
+<meta property="article:modified_time" content="2024-09-22T05:29:06.491Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="OS2024">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/image/report/1726979027919.png">
+  
+  
+    <meta name="referrer" content="no-referrer-when-downgrade">
+  
+  
+  <title>ucore_lab1 - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+  
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_3846514_kabxni94auf.css">
+<link rel="stylesheet" href="//cdn.jsdelivr.net/gh/bynotes/texiao/source/css/shubiao.css">
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":true,"follow_dnt":true,"baidu":null,"google":null,"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null},"woyaola":null,"cnzz":null},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+  
+<meta name="generator" content="Hexo 7.2.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>終末裁判の博客</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives" target="_self">
+                <i class="iconfont icon-books"></i>
+                <span>archieves</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories" target="_self">
+                <i class="iconfont icon-th-large"></i>
+                <span>catgories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/links/" target="_self">
+                <i class="iconfont icon-link-fill"></i>
+                <span>Links</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" target="_self" href="javascript:;" role="button"
+                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="iconfont icon-book"></i>
+                <span>docs</span>
+              </a>
+              <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                
+                  
+                  
+                  
+                  <a class="dropdown-item" href="https://hexo.fluid-dev.com/" target="_self">
+                    
+                    <span>主题博客</span>
+                  </a>
+                
+                  
+                  
+                  
+                  <a class="dropdown-item" href="https://hexo.fluid-dev.com/docs/guide/" target="_self">
+                    
+                    <span>配置指南</span>
+                  </a>
+                
+                  
+                  
+                  
+                  <a class="dropdown-item" href="https://hexo.fluid-dev.com/docs/icon/" target="_self">
+                    
+                    <span>图标用法</span>
+                  </a>
+                
+              </div>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="ucore_lab1"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-author" aria-hidden="true"></i>
+        John Doe
+      </span>
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2024-09-22 13:27" pubdate>
+           2024 年 09 月 22 日 , pm 01:27 , Sunday
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          <!-- compatible with older versions-->
+          3.3k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          <!-- compatible with older versions-->
+          28 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">ucore_lab1</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="练习1：理解内核启动中的程序入口操作"><a href="#练习1：理解内核启动中的程序入口操作" class="headerlink" title="练习1：理解内核启动中的程序入口操作"></a>练习1：理解内核启动中的程序入口操作</h2><h3 id="la-sp-bootstacktop"><a href="#la-sp-bootstacktop" class="headerlink" title="la sp, bootstacktop"></a><strong>la sp, bootstacktop</strong></h3><p>这条指令将栈指针 <code>sp</code> 初始化为内核栈顶 <code>bootstacktop</code>。其目的是为内核的初始化阶段设置一个安全的栈空间，以便后续执行函数调用时有足够的栈空间。</p>
+<h3 id="tail-kern-init"><a href="#tail-kern-init" class="headerlink" title="tail kern_init"></a><strong>tail kern_init</strong></h3><p><code>tail kern_init</code> 的作用是跳转到 <code>kern_init</code> 函数执行，同时它是一个尾调用优化形式，意味着它在执行过程中不会保留当前函数的返回地址，而是直接跳转到 <code>kern_init</code>，从而节省栈空间。</p>
+<h3 id="关键知识点："><a href="#关键知识点：" class="headerlink" title="关键知识点："></a>关键知识点：</h3><ul>
+<li>栈指针 <code>sp</code> 的初始化是为了确保内核在执行时有一个栈供其使用。</li>
+<li><code>tail</code> 调用可以优化跳转操作，减少不必要的栈操作。</li>
+</ul>
+<hr>
+<h2 id="练习2：完善中断处理"><a href="#练习2：完善中断处理" class="headerlink" title="练习2：完善中断处理"></a>练习2：完善中断处理</h2><h3 id="实现-trap-c-中时钟中断处理"><a href="#实现-trap-c-中时钟中断处理" class="headerlink" title="实现 trap.c 中时钟中断处理"></a>实现 <code>trap.c</code> 中时钟中断处理</h3><ol>
+<li>首先在中断处理函数中，调用 <code>clock_set_next_event()</code> 设置下次时钟中断。</li>
+<li>每次时钟中断时，计数器 <code>ticks</code> 递增。当 <code>ticks</code> 达到 100 时，调用 <code>print_ticks()</code> 输出 “100 ticks”。</li>
+<li>每次输出 100 ticks 后，计数器 <code>num</code> 递增，判断是否已经打印了 10 次，如果是，则调用 <code>sbi.h</code> 中的 <code>shutdown()</code> 函数关机。</li>
+</ol>
+<h3 id="代码："><a href="#代码：" class="headerlink" title="代码："></a>代码：</h3><p><img src="/image/report/1726979027919.png" srcset="/img/loading.gif" lazyload alt="1726979027919"></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">void</span> <span class="hljs-title function_">exception_handler</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> trapframe *tf)</span> &#123;<br>    <span class="hljs-keyword">switch</span> (tf-&gt;cause) &#123;<br>        <span class="hljs-keyword">case</span> CAUSE_MISALIGNED_FETCH:<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_FAULT_FETCH:<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_ILLEGAL_INSTRUCTION:<br>            <span class="hljs-comment">/* LAB1 CHALLENGE3: 非法指令异常处理 */</span><br>            cprintf(<span class="hljs-string">&quot;Illegal instruction at address 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            tf-&gt;epc += <span class="hljs-number">4</span>; <span class="hljs-comment">// 跳过非法指令</span><br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_BREAKPOINT:<br>            <span class="hljs-comment">/* LAB1 CHALLENGE3: 断点异常处理 */</span><br>            cprintf(<span class="hljs-string">&quot;Breakpoint at address 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            tf-&gt;epc += <span class="hljs-number">4</span>; <span class="hljs-comment">// 跳过断点指令</span><br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_MISALIGNED_LOAD:<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_FAULT_LOAD:<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_MISALIGNED_STORE:<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_FAULT_STORE:<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_USER_ECALL:<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_SUPERVISOR_ECALL:<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_HYPERVISOR_ECALL:<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_MACHINE_ECALL:<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">default</span>:<br>            print_trapframe(tf);<br>            <span class="hljs-keyword">break</span>;<br>    &#125;<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+<h3 id="关键知识点：-1"><a href="#关键知识点：-1" class="headerlink" title="关键知识点："></a>关键知识点：</h3><ul>
+<li>时钟中断的处理：每次时钟中断触发后，需要设置下次时钟事件。</li>
+<li>通过计数器控制定时输出，并实现最终的关机操作。</li>
+</ul>
+<hr>
+<h2 id="Challenge-1：中断处理流程"><a href="#Challenge-1：中断处理流程" class="headerlink" title="Challenge 1：中断处理流程"></a>Challenge 1：中断处理流程</h2><h3 id="mov-a0-sp-的目的"><a href="#mov-a0-sp-的目的" class="headerlink" title="mov a0, sp 的目的"></a>mov a0, sp 的目的</h3><p>该指令将当前栈指针 <code>sp</code> 的值保存到寄存器 <code>a0</code> 中，目的是将栈指针传递给异常处理函数，以便处理函数可以访问保存的寄存器状态。</p>
+<p>在 <code>__alltraps</code> 中的 <code>mov a0, sp</code> 是将栈指针寄存器 <code>sp</code> 的值移动到寄存器 <code>a0</code> 中。其目的是为了将当前内核栈的栈顶指针传递给 C 语言函数 <code>trap()</code>，从而让 <code>trap()</code> 函数能够使用该栈指针来访问保存的寄存器状态和其他上下文信息。这样可以确保 C 语言的异常处理函数能够正确处理和访问保存的 CPU 状态。</p>
+<h3 id="SAVE-ALL-中寄存器保存在栈中的位置确定"><a href="#SAVE-ALL-中寄存器保存在栈中的位置确定" class="headerlink" title="SAVE_ALL 中寄存器保存在栈中的位置确定"></a>SAVE_ALL 中寄存器保存在栈中的位置确定</h3><p>寄存器保存的位置根据 <code>sp</code> 的当前值向下偏移依次存储。每个寄存器对应的栈位置通过特定的偏移量来访问。</p>
+<h3 id="alltraps-中是否需要保存所有寄存器"><a href="#alltraps-中是否需要保存所有寄存器" class="headerlink" title="__alltraps 中是否需要保存所有寄存器"></a>__alltraps 中是否需要保存所有寄存器</h3><p>是的。在中断发生时，需要保存所有寄存器，以确保中断处理完成后能够正确恢复被打断的进程的状态。这是因为中断可能会打断任意时刻的执行，因此需要保留所有的寄存器信息。</p>
+<h3 id="1-ucore处理中断异常的流程"><a href="#1-ucore处理中断异常的流程" class="headerlink" title="1. ucore处理中断异常的流程"></a>1. <strong>ucore处理中断异常的流程</strong></h3><p>   在 RISC-V 中，当 CPU 遇到中断或异常时，系统会自动跳转到预先设置好的中断向量表中定义的中断处理程序。在 uCore 操作系统中，处理中断异常的流程如下：</p>
+<ul>
+<li><p><strong>异常发生</strong>：</p>
+<ul>
+<li>CPU 遇到一个中断或异常。</li>
+<li>当前执行流的状态（包括寄存器、程序计数器等）需要保存下来，以便处理完异常后能够恢复正常执行。</li>
+</ul>
+</li>
+<li><p><strong>切换到异常处理代码</strong>：</p>
+<ul>
+<li>RISC-V 的 <code>stvec</code> 寄存器指向的地址保存了异常处理程序的入口地址。在 <code>idt_init()</code> 函数中，<code>stvec</code> 被设置为 <code>__alltraps</code>，该函数是中断&#x2F;异常的统一入口。</li>
+</ul>
+</li>
+<li><p>**进入 <code>__alltraps</code>**：</p>
+<ul>
+<li><code>__alltraps</code> 是汇编实现的入口函数，负责保存当前的 CPU 状态（包括所有寄存器）到栈中，以便后续的 C 语言代码能够使用这些寄存器，并处理中断或异常。</li>
+</ul>
+</li>
+<li><p><strong>保存寄存器状态</strong>：</p>
+<ul>
+<li><code>__alltraps</code> 会调用 <code>SAVE_ALL</code> 宏，将当前的所有寄存器保存到栈上。保存状态的顺序是预先定义好的，通常是按照 RISC-V 的寄存器 ABI 规范。</li>
+</ul>
+</li>
+<li><p><strong>切换到内核栈</strong>：</p>
+<ul>
+<li>在 <code>SAVE_ALL</code> 中的 <code>mov a0, sp</code>，将栈指针寄存器 <code>sp</code> 的值传递给 <code>a0</code>，这是为了将当前的栈指针传递给内核的 C 语言中断处理函数，以便后续的中断处理函数能够访问保存的寄存器信息。</li>
+</ul>
+</li>
+<li><p>**进入 <code>trap()</code>**：</p>
+<ul>
+<li>中断处理程序会调用 <code>trap()</code> 函数，<code>trap()</code> 根据 <code>cause</code> 寄存器的值来判断中断或异常的类型，然后分发给具体的中断处理函数或者异常处理函数。</li>
+</ul>
+</li>
+<li><p><strong>处理完中断后恢复寄存器</strong>：</p>
+<ul>
+<li>中断处理结束后，控制权返回到 <code>__alltraps</code>，从栈中恢复所有保存的寄存器状态，最后返回到被中断的程序位置，继续执行未完成的任务。</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h3 id="3-SAVE-ALL-中寄存器保存在栈中的位置是如何确定的？"><a href="#3-SAVE-ALL-中寄存器保存在栈中的位置是如何确定的？" class="headerlink" title="3. SAVE_ALL 中寄存器保存在栈中的位置是如何确定的？"></a>3. <strong><code>SAVE_ALL</code> 中寄存器保存在栈中的位置是如何确定的？</strong></h3><p>   在 <code>SAVE_ALL</code> 宏中，寄存器保存的顺序是由 RISC-V 的 ABI（应用二进制接口）和系统架构规范决定的。通常寄存器会按固定顺序保存在栈中，这个顺序通常为：</p>
+<ol>
+<li><p>临时寄存器 (<code>t0</code>, <code>t1</code>, <code>t2</code>, …)。</p>
+</li>
+<li><p>返回地址 (<code>ra</code>)。</p>
+</li>
+<li><p>全局指针 (<code>gp</code>)、线程指针 (<code>tp</code>)。</p>
+</li>
+<li><p>保存寄存器 (<code>s0</code>, <code>s1</code>, …, <code>s11</code>)。</p>
+</li>
+<li><p>参数寄存器 (<code>a0</code>, <code>a1</code>, …, <code>a7</code>)。</p>
+<p>在 RISC-V 中，寄存器按照 ABI 规范进行调用约定，某些寄存器如 <code>a0</code> 到 <code>a7</code> 用于传递参数，<code>t0</code> 到 <code>t6</code> 是临时寄存器，而 <code>s0</code> 到 <code>s11</code> 是保存寄存器。寄存器的保存位置按照这些规则顺序决定，方便在中断返回时按正确顺序恢复。</p>
+</li>
+</ol>
+<hr>
+<h3 id="4-对于任何中断，-alltraps-中都需要保存所有寄存器吗？"><a href="#4-对于任何中断，-alltraps-中都需要保存所有寄存器吗？" class="headerlink" title="4. 对于任何中断，__alltraps 中都需要保存所有寄存器吗？"></a>4. <strong>对于任何中断，<code>__alltraps</code> 中都需要保存所有寄存器吗？</strong></h3><p><code>__alltraps</code> 需要保存所有寄存器。理由如下：</p>
+<ul>
+<li><strong>中断处理的不可预见性</strong>：在任何时间点中断都可能发生，而中断时可能会打断任何正在执行的代码。因此，在处理完中断后需要恢复到原来的状态，必须保存所有寄存器的状态以确保中断前的上下文能完全恢复。</li>
+<li><strong>寄存器共享问题</strong>：在中断发生时，CPU 正在使用的寄存器（无论是通用寄存器、临时寄存器，还是参数寄存器）都可能被中断处理程序破坏。如果不保存所有寄存器，处理完中断后寄存器的状态可能已经被更改，导致被中断的程序出错。因此需要保存所有寄存器。</li>
+<li><strong>统一处理</strong>：虽然某些情况下可能只需要保存部分寄存器，但为了简化设计，通常会统一保存所有寄存器，以保证在不同类型的中断或异常发生时，都能够正确地恢复执行。这样也减少了不同类型中断处理代码的复杂性。</li>
+</ul>
+<hr>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>中断处理流程从中断发生、保存寄存器状态到处理完中断后恢复寄存器状态，涉及多个关键步骤。<code>mov a0, sp</code> 是为了传递栈指针给中断处理函数，而 <code>SAVE_ALL</code> 确保所有寄存器都被保存，以便恢复时能回到中断前的状态。</p>
+<hr>
+<h2 id="Challenge-2：理解上下文切换机制"><a href="#Challenge-2：理解上下文切换机制" class="headerlink" title="Challenge 2：理解上下文切换机制"></a>Challenge 2：理解上下文切换机制</h2><h3 id="csrw-sscratch-sp-和-csrrw-s0-sscratch-x0-的作用"><a href="#csrw-sscratch-sp-和-csrrw-s0-sscratch-x0-的作用" class="headerlink" title="csrw sscratch, sp 和 csrrw s0, sscratch, x0 的作用"></a>csrw sscratch, sp 和 csrrw s0, sscratch, x0 的作用</h3><ul>
+<li><code>csrw sscratch, sp</code>：将当前栈指针 <code>sp</code> 的值保存到 <code>sscratch</code> CSR 中。</li>
+<li><code>csrrw s0, sscratch, x0</code>：交换 <code>sscratch</code> 和 <code>s0</code> 的值。</li>
+</ul>
+<p>这两条指令的作用是保存当前的栈指针，并使用一个中间寄存器 <code>s0</code> 作为临时存储，以确保中断处理函数能够访问到当前的栈。</p>
+<h3 id="保存了-stval-和-scause，但不还原的原因"><a href="#保存了-stval-和-scause，但不还原的原因" class="headerlink" title="保存了 stval 和 scause，但不还原的原因"></a>保存了 <code>stval</code> 和 <code>scause</code>，但不还原的原因</h3><p><code>stval</code> 和 <code>scause</code> 是异常和中断的状态寄存器，用于记录异常类型和发生的地址。保存它们是为了在中断处理过程中能够参考这些信息，但在恢复时不需要还原，因为它们的内容已经在处理中使用过，不影响恢复原有的执行状态。</p>
+<hr>
+<h2 id="Challenge-3：完善异常中断处理"><a href="#Challenge-3：完善异常中断处理" class="headerlink" title="Challenge 3：完善异常中断处理"></a>Challenge 3：完善异常中断处理</h2><p><img src="/image/report/1726980250503.png" srcset="/img/loading.gif" lazyload alt="1726980250503"></p>
+<p>增加了触发异常的代码，以及一些调试输出，以帮助确认异常处理流程是否正常。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;assert.h&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;clock.h&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;console.h&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;defs.h&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;kdebug.h&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;memlayout.h&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;mmu.h&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;riscv.h&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;stdio.h&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;trap.h&gt;</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;sbi.h&gt;</span></span><br><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> TICK_NUM 100</span><br><span class="hljs-keyword">volatile</span> <span class="hljs-type">size_t</span> num = <span class="hljs-number">0</span>;<br><span class="hljs-keyword">volatile</span> <span class="hljs-type">size_t</span> ticks = <span class="hljs-number">0</span>;<br><br><span class="hljs-type">static</span> <span class="hljs-type">void</span> <span class="hljs-title function_">print_ticks</span><span class="hljs-params">()</span> &#123;<br>    cprintf(<span class="hljs-string">&quot;%d ticks\n&quot;</span>, TICK_NUM);<br><span class="hljs-meta">#<span class="hljs-keyword">ifdef</span> DEBUG_GRADE</span><br>    cprintf(<span class="hljs-string">&quot;End of Test.\n&quot;</span>);<br>    panic(<span class="hljs-string">&quot;EOT: kernel seems ok.&quot;</span>);<br><span class="hljs-meta">#<span class="hljs-keyword">endif</span></span><br>&#125;<br><br><span class="hljs-type">void</span> <span class="hljs-title function_">idt_init</span><span class="hljs-params">(<span class="hljs-type">void</span>)</span> &#123;<br>    <span class="hljs-keyword">extern</span> <span class="hljs-type">void</span> __alltraps(<span class="hljs-type">void</span>);<br>    write_csr(sscratch, <span class="hljs-number">0</span>);<br>    write_csr(stvec, &amp;__alltraps);<br>&#125;<br><br><span class="hljs-type">bool</span> <span class="hljs-title function_">trap_in_kernel</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> trapframe *tf)</span> &#123;<br>    <span class="hljs-keyword">return</span> (tf-&gt;status &amp; SSTATUS_SPP) != <span class="hljs-number">0</span>;<br>&#125;<br><br><span class="hljs-type">void</span> <span class="hljs-title function_">print_trapframe</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> trapframe *tf)</span> &#123;<br>    cprintf(<span class="hljs-string">&quot;trapframe at %p\n&quot;</span>, tf);<br>    print_regs(&amp;tf-&gt;gpr);<br>    cprintf(<span class="hljs-string">&quot;  status   0x%08x\n&quot;</span>, tf-&gt;status);<br>    cprintf(<span class="hljs-string">&quot;  epc      0x%08x\n&quot;</span>, tf-&gt;epc);<br>    cprintf(<span class="hljs-string">&quot;  badvaddr 0x%08x\n&quot;</span>, tf-&gt;badvaddr);<br>    cprintf(<span class="hljs-string">&quot;  cause    0x%08x\n&quot;</span>, tf-&gt;cause);<br>&#125;<br><br><span class="hljs-type">void</span> <span class="hljs-title function_">print_regs</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> pushregs *gpr)</span> &#123;<br>    cprintf(<span class="hljs-string">&quot;  zero     0x%08x\n&quot;</span>, gpr-&gt;zero);<br>    cprintf(<span class="hljs-string">&quot;  ra       0x%08x\n&quot;</span>, gpr-&gt;ra);<br>    cprintf(<span class="hljs-string">&quot;  sp       0x%08x\n&quot;</span>, gpr-&gt;sp);<br>    cprintf(<span class="hljs-string">&quot;  gp       0x%08x\n&quot;</span>, gpr-&gt;gp);<br>    cprintf(<span class="hljs-string">&quot;  tp       0x%08x\n&quot;</span>, gpr-&gt;tp);<br>    cprintf(<span class="hljs-string">&quot;  t0       0x%08x\n&quot;</span>, gpr-&gt;t0);<br>    cprintf(<span class="hljs-string">&quot;  t1       0x%08x\n&quot;</span>, gpr-&gt;t1);<br>    cprintf(<span class="hljs-string">&quot;  t2       0x%08x\n&quot;</span>, gpr-&gt;t2);<br>    cprintf(<span class="hljs-string">&quot;  s0       0x%08x\n&quot;</span>, gpr-&gt;s0);<br>    cprintf(<span class="hljs-string">&quot;  s1       0x%08x\n&quot;</span>, gpr-&gt;s1);<br>    cprintf(<span class="hljs-string">&quot;  a0       0x%08x\n&quot;</span>, gpr-&gt;a0);<br>    cprintf(<span class="hljs-string">&quot;  a1       0x%08x\n&quot;</span>, gpr-&gt;a1);<br>    cprintf(<span class="hljs-string">&quot;  a2       0x%08x\n&quot;</span>, gpr-&gt;a2);<br>    cprintf(<span class="hljs-string">&quot;  a3       0x%08x\n&quot;</span>, gpr-&gt;a3);<br>    cprintf(<span class="hljs-string">&quot;  a4       0x%08x\n&quot;</span>, gpr-&gt;a4);<br>    cprintf(<span class="hljs-string">&quot;  a5       0x%08x\n&quot;</span>, gpr-&gt;a5);<br>    cprintf(<span class="hljs-string">&quot;  a6       0x%08x\n&quot;</span>, gpr-&gt;a6);<br>    cprintf(<span class="hljs-string">&quot;  a7       0x%08x\n&quot;</span>, gpr-&gt;a7);<br>    cprintf(<span class="hljs-string">&quot;  s2       0x%08x\n&quot;</span>, gpr-&gt;s2);<br>    cprintf(<span class="hljs-string">&quot;  s3       0x%08x\n&quot;</span>, gpr-&gt;s3);<br>    cprintf(<span class="hljs-string">&quot;  s4       0x%08x\n&quot;</span>, gpr-&gt;s4);<br>    cprintf(<span class="hljs-string">&quot;  s5       0x%08x\n&quot;</span>, gpr-&gt;s5);<br>    cprintf(<span class="hljs-string">&quot;  s6       0x%08x\n&quot;</span>, gpr-&gt;s6);<br>    cprintf(<span class="hljs-string">&quot;  s7       0x%08x\n&quot;</span>, gpr-&gt;s7);<br>    cprintf(<span class="hljs-string">&quot;  s8       0x%08x\n&quot;</span>, gpr-&gt;s8);<br>    cprintf(<span class="hljs-string">&quot;  s9       0x%08x\n&quot;</span>, gpr-&gt;s9);<br>    cprintf(<span class="hljs-string">&quot;  s10      0x%08x\n&quot;</span>, gpr-&gt;s10);<br>    cprintf(<span class="hljs-string">&quot;  s11      0x%08x\n&quot;</span>, gpr-&gt;s11);<br>    cprintf(<span class="hljs-string">&quot;  t3       0x%08x\n&quot;</span>, gpr-&gt;t3);<br>    cprintf(<span class="hljs-string">&quot;  t4       0x%08x\n&quot;</span>, gpr-&gt;t4);<br>    cprintf(<span class="hljs-string">&quot;  t5       0x%08x\n&quot;</span>, gpr-&gt;t5);<br>    cprintf(<span class="hljs-string">&quot;  t6       0x%08x\n&quot;</span>, gpr-&gt;t6);<br>&#125;<br><br><span class="hljs-type">void</span> <span class="hljs-title function_">interrupt_handler</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> trapframe *tf)</span> &#123;<br>    <span class="hljs-type">intptr_t</span> cause = (tf-&gt;cause &lt;&lt; <span class="hljs-number">1</span>) &gt;&gt; <span class="hljs-number">1</span>;<br>    <span class="hljs-keyword">switch</span> (cause) &#123;<br>        <span class="hljs-keyword">case</span> IRQ_U_SOFT:<br>            cprintf(<span class="hljs-string">&quot;User software interrupt\n&quot;</span>);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> IRQ_S_SOFT:<br>            cprintf(<span class="hljs-string">&quot;Supervisor software interrupt\n&quot;</span>);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> IRQ_H_SOFT:<br>            cprintf(<span class="hljs-string">&quot;Hypervisor software interrupt\n&quot;</span>);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> IRQ_M_SOFT:<br>            cprintf(<span class="hljs-string">&quot;Machine software interrupt\n&quot;</span>);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> IRQ_U_TIMER:<br>            cprintf(<span class="hljs-string">&quot;User timer interrupt\n&quot;</span>);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> IRQ_S_TIMER:<br>            <span class="hljs-comment">/* LAB1 EXERCISE2: 时钟中断处理 */</span><br>            clock_set_next_event(); <span class="hljs-comment">// 设置下次时钟中断</span><br>            ticks++; <span class="hljs-comment">// 计数器加一</span><br>            <span class="hljs-keyword">if</span> (ticks % TICK_NUM == <span class="hljs-number">0</span>) &#123; <span class="hljs-comment">// 每 100 次中断时</span><br>                print_ticks(); <span class="hljs-comment">// 打印 &quot;100 ticks&quot;</span><br>                num++; <span class="hljs-comment">// 打印次数加一</span><br>                <span class="hljs-keyword">if</span> (num == <span class="hljs-number">10</span>) &#123; <span class="hljs-comment">// 如果已打印 10 次</span><br>                    sbi_shutdown(); <span class="hljs-comment">// 调用 sbi_shutdown() 函数关机</span><br>                &#125;<br>            &#125;<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> IRQ_H_TIMER:<br>            cprintf(<span class="hljs-string">&quot;Hypervisor timer interrupt\n&quot;</span>);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> IRQ_M_TIMER:<br>            cprintf(<span class="hljs-string">&quot;Machine timer interrupt\n&quot;</span>);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> IRQ_U_EXT:<br>            cprintf(<span class="hljs-string">&quot;User external interrupt\n&quot;</span>);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> IRQ_S_EXT:<br>            cprintf(<span class="hljs-string">&quot;Supervisor external interrupt\n&quot;</span>);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> IRQ_H_EXT:<br>            cprintf(<span class="hljs-string">&quot;Hypervisor external interrupt\n&quot;</span>);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> IRQ_M_EXT:<br>            cprintf(<span class="hljs-string">&quot;Machine external interrupt\n&quot;</span>);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">default</span>:<br>            print_trapframe(tf);<br>            <span class="hljs-keyword">break</span>;<br>    &#125;<br>&#125;<br><br><span class="hljs-type">void</span> <span class="hljs-title function_">exception_handler</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> trapframe *tf)</span> &#123;<br>    <span class="hljs-keyword">switch</span> (tf-&gt;cause) &#123;<br>        <span class="hljs-keyword">case</span> CAUSE_MISALIGNED_FETCH:<br>            cprintf(<span class="hljs-string">&quot;Misaligned fetch at address 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_FAULT_FETCH:<br>            cprintf(<span class="hljs-string">&quot;Fault fetch at address 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_ILLEGAL_INSTRUCTION:<br>            <span class="hljs-comment">/* LAB1 CHALLENGE3: 非法指令异常处理 */</span><br>            cprintf(<span class="hljs-string">&quot;Illegal instruction caught at 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            tf-&gt;epc += <span class="hljs-number">4</span>; <span class="hljs-comment">// 跳过非法指令</span><br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_BREAKPOINT:<br>            <span class="hljs-comment">/* LAB1 CHALLENGE3: 断点异常处理 */</span><br>            cprintf(<span class="hljs-string">&quot;ebreak caught at 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            tf-&gt;epc += <span class="hljs-number">4</span>; <span class="hljs-comment">// 跳过断点指令</span><br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_MISALIGNED_LOAD:<br>            cprintf(<span class="hljs-string">&quot;Misaligned load at address 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_FAULT_LOAD:<br>            cprintf(<span class="hljs-string">&quot;Fault load at address 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_MISALIGNED_STORE:<br>            cprintf(<span class="hljs-string">&quot;Misaligned store at address 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_FAULT_STORE:<br>            cprintf(<span class="hljs-string">&quot;Fault store at address 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_USER_ECALL:<br>            cprintf(<span class="hljs-string">&quot;User ecall at address 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_SUPERVISOR_ECALL:<br>            cprintf(<span class="hljs-string">&quot;Supervisor ecall at address 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_HYPERVISOR_ECALL:<br>            cprintf(<span class="hljs-string">&quot;Hypervisor ecall at address 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">case</span> CAUSE_MACHINE_ECALL:<br>            cprintf(<span class="hljs-string">&quot;Machine ecall at address 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            <span class="hljs-keyword">break</span>;<br>        <span class="hljs-keyword">default</span>:<br>            cprintf(<span class="hljs-string">&quot;Unknown exception at address 0x%08x\n&quot;</span>, tf-&gt;epc);<br>            print_trapframe(tf);<br>            <span class="hljs-keyword">break</span>;<br>    &#125;<br>&#125;<br><br><span class="hljs-type">static</span> <span class="hljs-keyword">inline</span> <span class="hljs-type">void</span> <span class="hljs-title function_">trap_dispatch</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> trapframe *tf)</span> &#123;<br>    <span class="hljs-keyword">if</span> ((<span class="hljs-type">intptr_t</span>)tf-&gt;cause &lt; <span class="hljs-number">0</span>) &#123;<br>        interrupt_handler(tf);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        exception_handler(tf);<br>    &#125;<br>&#125;<br><br><span class="hljs-type">void</span> <span class="hljs-title function_">trap</span><span class="hljs-params">(<span class="hljs-keyword">struct</span> trapframe *tf)</span> &#123;<br>    trap_dispatch(tf);<br>&#125;<br><br><span class="hljs-comment">//</span><br><br> 这里可以添加触发异常的代码示例<br><span class="hljs-type">void</span> <span class="hljs-title function_">trigger_exception</span><span class="hljs-params">()</span> &#123;<br>    <span class="hljs-keyword">asm</span> <span class="hljs-title function_">volatile</span><span class="hljs-params">(<span class="hljs-string">&quot;unimp&quot;</span>)</span>; <span class="hljs-comment">// 触发非法指令异常</span><br>&#125;<br><br><span class="hljs-type">int</span> <span class="hljs-title function_">main</span><span class="hljs-params">()</span> &#123;<br>    idt_init();<br>    trigger_exception(); <span class="hljs-comment">// 测试触发异常的功能</span><br>    <span class="hljs-keyword">while</span> (<span class="hljs-number">1</span>);<br>    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="代码说明："><a href="#代码说明：" class="headerlink" title="代码说明："></a>代码说明：</h3><ol>
+<li><strong>异常处理</strong>：在 <code>exception_handler</code> 中，对非法指令异常进行了处理，并在捕获时输出相关信息。</li>
+<li><strong>调试输出</strong>：增加了调试输出，可以帮助你确认代码流是否按照预期进行。</li>
+<li><strong>触发异常的示例</strong>：<code>trigger_exception</code> 函数包含了触发非法指令的汇编代码，可以在 <code>main</code> 中调用以测试异常处理是否正常工作。</li>
+</ol>
+<h2 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h2><h3 id="实验中的重要知识点："><a href="#实验中的重要知识点：" class="headerlink" title="实验中的重要知识点："></a>实验中的重要知识点：</h3><ul>
+<li><strong>中断处理</strong>：处理不同类型的中断和异常，保证系统能够正常应对外部和内部事件。</li>
+<li><strong>上下文切换</strong>：保存和恢复上下文是内核调度和中断处理中的关键操作。</li>
+<li><strong>异常处理机制</strong>：正确捕获和处理非法指令及断点，是确保系统稳定性的重要环节。</li>
+</ul>
+<h3 id="OS原理中的重要知识点但实验中未涉及："><a href="#OS原理中的重要知识点但实验中未涉及：" class="headerlink" title="OS原理中的重要知识点但实验中未涉及："></a>OS原理中的重要知识点但实验中未涉及：</h3><ul>
+<li><strong>进程调度算法</strong>：实验中没有深入实现进程的调度策略。</li>
+<li><strong>内存管理机制</strong>：虽然涉及到栈指针的使用，但没有具体实现内存分配和页面管理。</li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/OS2024/" class="print-no-link">#OS2024</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>ucore_lab1</div>
+      <div>http://example.com/2024/09/22/ucore-lab1/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>September 22, 2024</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2024/09/22/ucore-lab0-5/" title="ucore_lab0.5">
+                        <span class="hidden-mobile">ucore_lab0.5</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+  
+  
+    <article id="comments" lazyload>
+      
+  <div id="valine"></div>
+  <script type="text/javascript">
+    Fluid.utils.loadComments('#valine', function() {
+      Fluid.utils.createScript('https://lib.baomitu.com/valine/1.5.1/Valine.min.js', function() {
+        var options = Object.assign(
+          {"appId":"你的appId","appKey":"你的appKey","path":"window.location.pathname","placeholder":"留言仅限讨论，禁止广告等行为","avatar":"retro","meta":["nick","mail","link"],"requiredFields":[],"pageSize":10,"lang":"zh-CN","highlight":false,"recordIP":false,"serverURLs":"你的serverURLs","emojiCDN":null,"emojiMaps":null,"enableQQ":false},
+          {
+            el: "#valine",
+            path: window.location.pathname
+          }
+        )
+        new Valine(options);
+        Fluid.utils.waitElementVisible('#valine .vcontent', () => {
+          var imgSelector = '#valine .vcontent img:not(.vemoji)';
+          Fluid.plugins.imageCaption(imgSelector);
+          Fluid.plugins.fancyBox(imgSelector);
+        })
+      });
+    });
+  </script>
+  <noscript>Please enable JavaScript to view the comments</noscript>
+
+
+    </article>
+  
+
+
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+    <div class="statistics">
+  
+  
+
+  
+    
+      <span id="busuanzi_container_site_pv" style="display: none">
+        总访问量 
+        <span id="busuanzi_value_site_pv"></span>
+         次
+      </span>
+    
+    
+      <span id="busuanzi_container_site_uv" style="display: none">
+        总访客数 
+        <span id="busuanzi_value_site_uv"></span>
+         人
+      </span>
+    
+    
+
+  
+
+</div>
+
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+  
+<script src="//cdn.jsdelivr.net/gh/bynotes/texiao/source/js/love.js"></script>
+<script src="//cdn.jsdelivr.net/gh/bynotes/texiao/source/js/xiaoxingxing.js"></script>
+<script src="//cdn.jsdelivr.net/gh/bynotes/texiao/source/js/xiaoxuehua.js"></script>
+<script src="//cdn.jsdelivr.net/gh/bynotes/texiao/source/js/caidai.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>
